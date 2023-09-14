@@ -6,14 +6,15 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hex = "0.4.3"
+# hex = "0.4.3"
 
 # Note: This project uses the [0.10.0 release](https://github.com/iced-rs/iced/releases/tag/0.10.0)
-iced = {git = "https://github.com/iced-rs/iced.git", rev = "1175f50bcc179d1bb74cac997c8390980e5b47ed", features = ["advanced", "tokio"]}
+# iced = {git = "https://github.com/iced-rs/iced.git", rev = "1175f50bcc179d1bb74cac997c8390980e5b47ed", features = ["advanced", "tokio"]}
+iced = {git = "https://github.com/iced-rs/iced.git", rev = "1175f50bcc179d1bb74cac997c8390980e5b47ed", features = ["advanced"]}
 
 serde = {version = "1.0.188", features = ["derive"]}
 serde_json = {version = "1.0.106"}
 
 # [ref](https://github.com/tokio-rs/tokio/blob/master/tokio/Cargo.toml)
 # not sure if i need all of those features (fs for sure, but...)
-tokio = {version = "1.0", features = ["fs", "io-util", "io-std"]}
+# tokio = {version = "1.0", features = ["fs", "io-util", "io-std"]}

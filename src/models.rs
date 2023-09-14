@@ -17,14 +17,6 @@ impl MaterialFontMeta {
         self.codepoint
     }
 
-    pub fn categories(&self) -> &Vec<String> {
-        &self.categories
-    }
-
-    pub fn tags(&self) -> &Vec<String> {
-        &self.tags
-    }
-
     pub fn to_char(&self) -> char {
         char::from_u32(self.codepoint).unwrap()
     }
@@ -41,25 +33,25 @@ impl MaterialFontMeta {
         self.tags.contains(tag)
     }
 
-    pub fn matches_name(&self, name: &String) -> bool {
-        &self.name == name
-    }
+    // pub fn matches_name(&self, name: &String) -> bool {
+    //     &self.name == name
+    // }
 
-    pub fn matches_any(&self, value: &String) -> bool {
-        if self.matches_name(value) {
-            return true;
-        }
-        if self.contains_category(value) {
-            return true;
-        }
-        if self.contains_tag(value) {
-            return true;
-        }
-        if self.matches_hex_codepoint(value) {
-            return true;
-        }
-        false
-    }
+    // pub fn matches_any(&self, value: &String) -> bool {
+    //     if self.matches_name(value) {
+    //         return true;
+    //     }
+    //     if self.contains_category(value) {
+    //         return true;
+    //     }
+    //     if self.contains_tag(value) {
+    //         return true;
+    //     }
+    //     if self.matches_hex_codepoint(value) {
+    //         return true;
+    //     }
+    //     false
+    // }
 
     pub fn matches_hex_codepoint(&self, codepoint: &String) -> bool {
         let hex_codepoint = format!("{:08x}", self.codepoint);
@@ -71,20 +63,19 @@ impl MaterialFontMeta {
 pub struct MaterialFontMetaList {
     items: Vec<MaterialFontMeta>,
     categories: Vec<String>,
-    tags: Vec<String>,
 }
 
 #[derive(Debug)]
 pub enum LoadError {
-    IO(std::io::Error),
+    // IO(std::io::Error),
     Serde(String),
 }
 
-impl std::convert::From<std::io::Error> for LoadError {
-    fn from(value: std::io::Error) -> Self {
-        Self::IO(value)
-    }
-}
+// impl std::convert::From<std::io::Error> for LoadError {
+//     fn from(value: std::io::Error) -> Self {
+//         Self::IO(value)
+//     }
+// }
 
 impl Default for MaterialFontMetaList {
     fn default() -> Self {
@@ -97,12 +88,15 @@ impl MaterialFontMetaList {
         Self {
             items: vec![],
             categories: vec![],
-            tags: vec![],
         }
     }
 
     pub fn items(&self) -> &Vec<MaterialFontMeta> {
         &self.items
+    }
+
+    pub fn get_item(&self, codepoint: u32) -> Option<&MaterialFontMeta> {
+        self.items.iter().find(|item| item.codepoint == codepoint)
     }
 
     pub fn count(&self) -> usize {
@@ -113,29 +107,24 @@ impl MaterialFontMetaList {
         &self.categories
     }
 
-    pub fn tags(&self) -> &Vec<String> {
-        &self.tags
+    pub async fn load_from_bytes_fake_async(
+        bytes: impl Into<std::borrow::Cow<'static, [u8]>>,
+    ) -> Result<Self, LoadError> {
+        Self::load_from_bytes(bytes)
     }
 
-    pub async fn load_async(file_path: &str) -> Result<Self, LoadError> {
-        let contents = match tokio::fs::read_to_string(file_path).await {
-            Ok(contents) => contents,
-            Err(e) => return Err(LoadError::IO(e)),
-        };
-
-        Self::parse_json_contents(contents)
-    }
-
-    pub fn load_from_bytes() -> Result<Self, LoadError> {
-        panic!("Please implement me!");
-    }
-
-    fn parse_json_contents(contents: String) -> Result<Self, LoadError> {
-        let value = match serde_json::from_str::<serde_json::Value>(&contents) {
+    pub fn load_from_bytes(
+        bytes: impl Into<std::borrow::Cow<'static, [u8]>>,
+    ) -> Result<Self, LoadError> {
+        let value = match serde_json::from_slice::<serde_json::Value>(&bytes.into()) {
             Ok(value) => value,
             Err(e) => return Err(LoadError::Serde(e.to_string())),
         };
 
+        Self::parse_json_value(value)
+    }
+
+    fn parse_json_value(value: serde_json::Value) -> Result<Self, LoadError> {
         let icons = value["icons"].clone();
 
         let items = match serde_json::from_value::<Vec<MaterialFontMeta>>(icons) {
@@ -153,93 +142,6 @@ impl MaterialFontMetaList {
             values
         };
 
-        let tags = {
-            let mut values = items
-                .iter()
-                .flat_map(|item| item.tags.clone())
-                .collect::<Vec<String>>();
-            values.sort();
-            values.dedup();
-            values
-        };
-
-        Ok(Self {
-            items,
-            categories,
-            tags,
-        })
-    }
-
-    pub fn load(file_path: &str) -> Result<Self, LoadError> {
-        let contents = std::fs::read_to_string(file_path)?;
-
-        Self::parse_json_contents(contents)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const META_FILE_PATH: &'static str = "./resources/material-icons-meta.json";
-
-    #[test]
-    fn test_load_method() {
-        let list = MaterialFontMetaList::load(META_FILE_PATH).unwrap();
-        println!("{} items loaded", list.items.len());
-
-        println!("Categories: {:?}", list.categories);
-        println!("Tags: {:?}", list.tags);
-    }
-
-    #[test]
-    fn test_font_meta_deserialize_array() {
-        let contents = std::fs::read_to_string(META_FILE_PATH).unwrap();
-        let value: serde_json::Value = serde_json::from_str(&contents).unwrap();
-        let icons = value["icons"].clone();
-        let items: Vec<MaterialFontMeta> = serde_json::from_value(icons).unwrap();
-        assert!(items.len() > 0);
-        println!("{} items found", items.len());
-    }
-
-    #[test]
-    fn test_font_meta_deserialize() {
-        let json = r#"
-        {
-            "name": "10k",
-            "version": 10,
-            "popularity": 1161,
-            "codepoint": 59729,
-            "unsupported_families": [],
-            "categories": [
-              "av"
-            ],
-            "tags": [
-              "10000",
-              "10K",
-              "alphabet",
-              "character",
-              "digit",
-              "display",
-              "font",
-              "letter",
-              "number",
-              "pixel",
-              "pixels",
-              "resolution",
-              "symbol",
-              "text",
-              "type",
-              "video"
-            ],
-            "sizes_px": [
-              24
-            ]
-          }
-        "#;
-        match serde_json::from_str::<MaterialFontMeta>(json) {
-            Ok(meta) => println!("{:#?}", meta),
-            Err(e) => panic!("{:?}", e),
-        }
+        Ok(Self { items, categories })
     }
 }
