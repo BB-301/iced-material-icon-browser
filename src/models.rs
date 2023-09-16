@@ -6,6 +6,7 @@ pub struct MaterialFontMeta {
     codepoint: u32,
     categories: Vec<String>,
     tags: Vec<String>,
+    popularity: u64,
 }
 
 impl MaterialFontMeta {
@@ -33,29 +34,16 @@ impl MaterialFontMeta {
         self.tags.contains(tag)
     }
 
-    // pub fn matches_name(&self, name: &String) -> bool {
-    //     &self.name == name
-    // }
-
-    // pub fn matches_any(&self, value: &String) -> bool {
-    //     if self.matches_name(value) {
-    //         return true;
-    //     }
-    //     if self.contains_category(value) {
-    //         return true;
-    //     }
-    //     if self.contains_tag(value) {
-    //         return true;
-    //     }
-    //     if self.matches_hex_codepoint(value) {
-    //         return true;
-    //     }
-    //     false
-    // }
-
     pub fn matches_hex_codepoint(&self, codepoint: &String) -> bool {
         let hex_codepoint = format!("{:08x}", self.codepoint);
         hex_codepoint.ends_with(codepoint)
+    }
+
+    pub fn matches_codepoint(&self, codepoint: &String) -> bool {
+        match codepoint.parse::<u32>() {
+            Err(_) => false,
+            Ok(codepoint) => self.codepoint == codepoint,
+        }
     }
 }
 
@@ -63,6 +51,7 @@ impl MaterialFontMeta {
 pub struct MaterialFontMetaList {
     items: Vec<MaterialFontMeta>,
     categories: Vec<String>,
+    category_codepoints: Vec<u32>,
 }
 
 #[derive(Debug)]
@@ -88,6 +77,7 @@ impl MaterialFontMetaList {
         Self {
             items: vec![],
             categories: vec![],
+            category_codepoints: vec![],
         }
     }
 
@@ -101,6 +91,10 @@ impl MaterialFontMetaList {
 
     pub fn categories(&self) -> &Vec<String> {
         &self.categories
+    }
+
+    pub fn category_codepoints(&self) -> &Vec<u32> {
+        &self.category_codepoints
     }
 
     pub async fn load_from_bytes_fake_async(
@@ -138,6 +132,27 @@ impl MaterialFontMetaList {
             values
         };
 
-        Ok(Self { items, categories })
+        let category_codepoints = categories
+            .iter()
+            .map(|name| {
+                let item = items
+                    .iter()
+                    .filter(|item| item.contains_category(name))
+                    .reduce(|current_item, next_item| {
+                        if current_item.popularity > next_item.popularity {
+                            current_item
+                        } else {
+                            next_item
+                        }
+                    });
+                item.as_ref().unwrap().codepoint
+            })
+            .collect::<Vec<u32>>();
+
+        Ok(Self {
+            items,
+            categories,
+            category_codepoints,
+        })
     }
 }

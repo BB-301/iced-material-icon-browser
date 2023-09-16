@@ -4,3 +4,4 @@ target
 PRIVATE_README.md
 .vscode
 .btasks
+tmp

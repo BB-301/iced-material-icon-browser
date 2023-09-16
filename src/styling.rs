@@ -1,45 +1,20 @@
-#[derive(Debug, Default, Copy, Clone)]
-pub enum CustomTheme {
-    #[default]
-    Dark,
-    Light,
+#[derive(Clone, Copy, Debug)]
+pub struct CustomTheme {
+    background: iced::Color,
+    text: iced::Color,
+    primary: iced::Color,
+    success: iced::Color,
+    danger: iced::Color,
 }
 
 impl CustomTheme {
-    fn background_color(&self) -> iced::Color {
-        match self {
-            // CustomTheme::Dark => iced::Color::from_rgba8(0x00, 0x00, 0x00, 1.0),
-            CustomTheme::Dark => iced::Color::from_rgba8(30, 30, 30, 1.0),
-            CustomTheme::Light => iced::Color::from_rgba8(0xff, 0xff, 0xff, 1.0),
-        }
-    }
-
-    fn text_color(&self) -> iced::Color {
-        match self {
-            // CustomTheme::Dark => iced::Color::from_rgba8(0xff, 0xff, 0xff, 1.0),
-            CustomTheme::Dark => iced::Color::from_rgba8(221, 221, 221, 1.0),
-            CustomTheme::Light => iced::Color::from_rgba8(0x00, 0x00, 0x00, 1.0),
-        }
-    }
-
-    fn primary_color(&self) -> iced::Color {
-        match self {
-            CustomTheme::Dark => iced::Color::from_rgba8(10, 132, 255, 1.0),
-            CustomTheme::Light => iced::Color::from_rgba8(0, 122, 255, 1.0),
-        }
-    }
-
-    fn success_color(&self) -> iced::Color {
-        match self {
-            CustomTheme::Dark => iced::Color::from_rgba8(48, 209, 81, 1.0),
-            CustomTheme::Light => iced::Color::from_rgba8(52, 199, 89, 1.0),
-        }
-    }
-
-    fn danger_color(&self) -> iced::Color {
-        match self {
-            CustomTheme::Dark => iced::Color::from_rgba8(255, 69, 58, 1.0),
-            CustomTheme::Light => iced::Color::from_rgba8(255, 59, 48, 1.0),
+    pub fn new() -> Self {
+        Self {
+            background: iced::Color::from_rgba8(30, 30, 30, 1.0),
+            text: iced::Color::from_rgba8(221, 221, 221, 1.0),
+            primary: iced::Color::from_rgba8(10, 132, 255, 1.0),
+            success: iced::Color::from_rgba8(48, 209, 81, 1.0),
+            danger: iced::Color::from_rgba8(255, 69, 58, 1.0),
         }
     }
 
@@ -47,19 +22,12 @@ impl CustomTheme {
         iced::theme::Theme::custom(iced::theme::Palette {
             // [iced example](https://github.com/iced-rs/iced/blob/master/examples/styling/src/main.rs)
             // [apple color guidelines](https://developer.apple.com/design/human-interface-guidelines/color)
-            background: self.background_color(),
-            text: self.text_color(),
-            primary: self.primary_color(),
-            success: self.success_color(),
-            danger: self.danger_color(),
+            background: self.background,
+            text: self.text,
+            primary: self.primary,
+            success: self.success,
+            danger: self.danger,
         })
-    }
-
-    pub fn toggle(self) -> Self {
-        match self {
-            Self::Light => Self::Dark,
-            Self::Dark => Self::Light,
-        }
     }
 }
 
@@ -117,6 +85,7 @@ pub enum CustomContainerStyle {
     Default,
     Toolbar,
     Sidebar,
+    Preview,
 }
 
 pub struct CustomContainer(CustomContainerStyle);
@@ -136,6 +105,10 @@ impl CustomContainer {
         Self(CustomContainerStyle::Sidebar)
     }
 
+    pub fn preview() -> Self {
+        Self(CustomContainerStyle::Preview)
+    }
+
     pub fn move_to_style(self) -> iced::theme::Container {
         self.into()
     }
@@ -153,6 +126,13 @@ impl iced::widget::container::StyleSheet for CustomContainer {
     fn appearance(&self, style: &Self::Style) -> iced::widget::container::Appearance {
         let background_color = match self.0 {
             CustomContainerStyle::Default => style.palette().background,
+            CustomContainerStyle::Preview => {
+                let mut c = style.palette().background;
+                c.r += 0.1;
+                c.g += 0.1;
+                c.b += 0.1;
+                c
+            }
             CustomContainerStyle::Toolbar => {
                 let mut c = style.palette().background;
                 c.r += 0.03;
