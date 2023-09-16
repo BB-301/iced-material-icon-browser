@@ -99,10 +99,6 @@ impl MaterialFontMetaList {
         self.items.iter().find(|item| item.codepoint == codepoint)
     }
 
-    pub fn count(&self) -> usize {
-        self.items.len()
-    }
-
     pub fn categories(&self) -> &Vec<String> {
         &self.categories
     }
